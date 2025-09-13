@@ -1,14 +1,20 @@
-import ical from "node-ical";
+// CommonJS version (works out of the box on Netlify)
+const ical = require("node-ical");
 
-export async function handler() {
+exports.handler = async () => {
   try {
-    const ICS_URL = process.env.SCHOOL_ICS; // set in Netlify dashboard
+    const ICS_URL = process.env.SCHOOL_ICS;
+    if (!ICS_URL) {
+      throw new Error("Missing SCHOOL_ICS env var");
+    }
+
     const data = await ical.async.fromURL(ICS_URL);
     const now = new Date();
 
     const events = Object.values(data)
       .filter(
-        (e) => e.type === "VEVENT" && e.start instanceof Date && e.start > now
+        (e) =>
+          e && e.type === "VEVENT" && e.start instanceof Date && e.start > now
       )
       .sort((a, b) => a.start - b.start)
       .slice(0, 3)
@@ -24,14 +30,23 @@ export async function handler() {
       headers: {
         "Content-Type": "application/json",
         "Cache-Control": "public, max-age=900",
-        "Access-Control-Allow-Origin": "*", // or lock to your GH-Pages domain
+        // lock to your GH Pages origin if you want:
+        // "Access-Control-Allow-Origin": "https://<your-gh-username>.github.io"
+        "Access-Control-Allow-Origin": "*",
       },
       body: JSON.stringify({ events }),
     };
   } catch (err) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ events: [], error: "failed" }),
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+      body: JSON.stringify({
+        events: [],
+        error: String(err?.message || "failed"),
+      }),
     };
   }
-}
+};
