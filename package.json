@@ -1,0 +1,8 @@
+{
+  "name": "am-api",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "node-ical": "^0.15.1"
+  }
+}
